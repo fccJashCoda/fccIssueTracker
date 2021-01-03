@@ -92,14 +92,19 @@ module.exports = function (app, database) {
     .delete(function (req, res) {
       let project = req.params.project;
       if (!req.body._id) {
-        return res.json({ error: 'missing data' });
+        return res.status(400).json({ error: 'missing data' });
       }
 
       const query = { _id: ObjectId(req.body._id) };
 
+      // database.collection(project).findOneAndDelete(query, (err, data) => {
       database.collection(project).deleteOne(query, (err, data) => {
         if (err) {
           return res.status(500).json({ error: 'server error' });
+        }
+
+        if (data.deletedCount === 0) {
+          return res.status(400).json({ error: 'invalid id' });
         }
 
         res.json({ result: 'successfully deleted', _id: req.body._id });
