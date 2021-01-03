@@ -8,9 +8,16 @@ module.exports = function (app, database) {
     .get(async function (req, res) {
       let project = req.params.project;
 
+      console.log(req.query);
+
+      const filter = { ...req.query };
+      if (filter.open) {
+        filter.open = filter.open === 'true' ? true : false;
+      }
+      console.log(filter);
       database
         .collection(project)
-        .find({})
+        .find(filter)
         .toArray((err, data) => {
           if (err) {
             return res.status(500).json({ error: 'server error' });
@@ -76,7 +83,6 @@ module.exports = function (app, database) {
           if (err) {
             return res.status(500).json({ error: 'server error' });
           }
-          console.log(data);
           console.log(`Object with id ${req.body._id} updated`);
           return res.json({
             result: 'successfully updated',
@@ -92,6 +98,7 @@ module.exports = function (app, database) {
       }
 
       const query = { _id: ObjectId(req.body._id) };
+
       database.collection(project).deleteOne(query, (err, data) => {
         if (err) {
           return res.status(500).json({ error: 'server error' });
