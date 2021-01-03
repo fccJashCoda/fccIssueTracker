@@ -8,13 +8,11 @@ module.exports = function (app, database) {
     .get(async function (req, res) {
       let project = req.params.project;
 
-      console.log(req.query);
-
       const filter = { ...req.query };
       if (filter.open) {
         filter.open = filter.open === 'true' ? true : false;
       }
-      console.log(filter);
+
       database
         .collection(project)
         .find(filter)
@@ -32,7 +30,7 @@ module.exports = function (app, database) {
 
       const { issue_title, issue_text, created_by } = req.body;
       if (!issue_title || !issue_text || !created_by) {
-        return res.json({ error: 'Missing data' });
+        return res.status(400).json({ error: 'missing data' });
       }
 
       const assigned_to = req.body.assigned_to ? req.body.assigned_to : '';
@@ -83,7 +81,7 @@ module.exports = function (app, database) {
           if (err) {
             return res.status(500).json({ error: 'server error' });
           }
-          console.log(`Object with id ${req.body._id} updated`);
+
           return res.json({
             result: 'successfully updated',
             _id: req.body._id,
