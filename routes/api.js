@@ -63,36 +63,60 @@ module.exports = function (app, database) {
       let project = req.params.project;
 
       if (!req.body._id) {
-        return res.json({ error: 'Missing data' });
+        return res.status(400).json({ error: 'missing _id' });
       }
 
       const query = { _id: ObjectId(req.body._id) };
 
-      const update = { open: true, updated_on: new Date().toISOString() };
+      const baseCase = { open: true, updated_on: new Date().toISOString() };
+      const update = {};
       for (const property in req.body) {
         if (property !== '_id' && req.body[property]) {
           update[property] = req.body[property];
         }
       }
 
+      if (!Object.keys(update).length) {
+        return res.json({
+          error: 'no update field(s) sent',
+          _id: req.body._id,
+        });
+      }
+
+      const payload = Object.assign({}, baseCase, update);
+
       database
         .collection(project)
-        .updateOne(query, { $set: { ...update } }, (err, data) => {
-          if (err) {
-            return res.status(500).json({ error: 'server error' });
-          }
+        .findOneAndUpdate(
+          query,
+          { $set: { ...payload } },
+          { returnOriginal: false },
+          (err, data) => {
+            if (err) {
+              console.log(err);
+              return res.status(500).json({ error: 'server error' });
+            }
 
-          return res.json({
-            result: 'successfully updated',
-            _id: req.body._id,
-          });
-        });
+            if (!data.value) {
+              return res.json({
+                error: 'could not update',
+                _id: req.body._id,
+              });
+            }
+
+            // return res.json(data);
+            return res.json({
+              result: 'successfully updated',
+              _id: req.body._id,
+            });
+          }
+        );
     })
 
     .delete(function (req, res) {
       let project = req.params.project;
       if (!req.body._id) {
-        return res.status(400).json({ error: 'missing data' });
+        return res.status(400).json({ error: 'missing _id' });
       }
 
       const query = { _id: ObjectId(req.body._id) };
@@ -104,7 +128,7 @@ module.exports = function (app, database) {
         }
 
         if (data.deletedCount === 0) {
-          return res.status(400).json({ error: 'invalid id' });
+          return res.status(400).json({ error: 'invalid _id' });
         }
 
         res.json({ result: 'successfully deleted', _id: req.body._id });
