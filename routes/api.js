@@ -12,6 +12,9 @@ module.exports = function (app, database) {
       if (filter.open) {
         filter.open = filter.open === 'true' ? true : false;
       }
+      if (filter._id) {
+        filter._id = ObjectId(filter._id);
+      }
 
       database
         .collection(project)
@@ -21,7 +24,7 @@ module.exports = function (app, database) {
             return res.status(500).json({ error: 'server error' });
           }
 
-          res.json(data);
+          res.json(data.reverse());
         });
     })
 
@@ -30,7 +33,7 @@ module.exports = function (app, database) {
 
       const { issue_title, issue_text, created_by } = req.body;
       if (!issue_title || !issue_text || !created_by) {
-        return res.status(400).json({ error: 'missing data' });
+        return res.json({ error: 'required field(s) missing' });
       }
 
       const assigned_to = req.body.assigned_to ? req.body.assigned_to : '';
@@ -63,12 +66,12 @@ module.exports = function (app, database) {
       let project = req.params.project;
 
       if (!req.body._id) {
-        return res.status(400).json({ error: 'missing _id' });
+        return res.json({ error: 'missing _id' });
       }
 
       const query = { _id: ObjectId(req.body._id) };
 
-      const baseCase = { open: true, updated_on: new Date().toISOString() };
+      const baseCase = { open: true };
       const update = {};
       for (const property in req.body) {
         if (property !== '_id' && req.body[property]) {
@@ -89,11 +92,10 @@ module.exports = function (app, database) {
         .collection(project)
         .findOneAndUpdate(
           query,
-          { $set: { ...payload } },
+          { $set: { ...payload, updated_on: new Date().toISOString() } },
           { returnOriginal: false },
           (err, data) => {
             if (err) {
-              console.log(err);
               return res.status(500).json({ error: 'server error' });
             }
 
@@ -104,7 +106,6 @@ module.exports = function (app, database) {
               });
             }
 
-            // return res.json(data);
             return res.json({
               result: 'successfully updated',
               _id: req.body._id,
@@ -116,22 +117,21 @@ module.exports = function (app, database) {
     .delete(function (req, res) {
       let project = req.params.project;
       if (!req.body._id) {
-        return res.status(400).json({ error: 'missing _id' });
+        return res.json({ error: 'missing _id' });
       }
 
       const query = { _id: ObjectId(req.body._id) };
 
-      // database.collection(project).findOneAndDelete(query, (err, data) => {
       database.collection(project).deleteOne(query, (err, data) => {
         if (err) {
           return res.status(500).json({ error: 'server error' });
         }
 
         if (data.deletedCount === 0) {
-          return res.status(400).json({ error: 'invalid _id' });
+          return res.json({ error: 'could not delete', _id: req.body._id });
         }
 
-        res.json({ result: 'successfully deleted', _id: req.body._id });
+        return res.json({ result: 'successfully deleted', _id: req.body._id });
       });
     });
 };

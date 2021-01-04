@@ -70,8 +70,8 @@ suite('Functional Tests', function () {
           .post('/api/issues/apitest')
           .send(issue)
           .end(function (req, res) {
-            assert.equal(res.status, 400);
-            assert.equal(res.body.error, 'missing data');
+            assert.equal(res.status, 200);
+            assert.equal(res.body.error, 'required field(s) missing');
             done();
           });
       });
@@ -137,11 +137,6 @@ suite('Functional Tests', function () {
           .send(update)
           .end(function (req, res) {
             assert.equal(res.status, 200);
-            // assert.equal(res.body.value.issue_title, 'Test title');
-            // assert.equal(res.body.value.issue_text, 'updated text');
-            // assert.equal(res.body.value.created_by, 'tdd');
-            // assert.equal(res.body.value.assigned_to, 'admin');
-            // assert.equal(res.body.value.status_text, 'in QA');
             assert.equal(res.body.result, 'successfully updated');
             assert.equal(res.body._id, id);
             done();
@@ -161,11 +156,11 @@ suite('Functional Tests', function () {
           .send(update)
           .end(function (req, res) {
             assert.equal(res.status, 200);
-            // assert.equal(res.body.value.issue_title, 'Test title');
-            // assert.equal(res.body.value.issue_text, 'updated text');
-            // assert.equal(res.body.value.created_by, 'tdd');
-            // assert.equal(res.body.value.assigned_to, 'bill');
-            // assert.equal(res.body.value.status_text, 'extended QA');
+            assert.isObject(res.body);
+            assert.deepEqual(res.body, {
+              result: 'successfully updated',
+              _id: id,
+            });
             assert.equal(res.body.result, 'successfully updated');
             assert.equal(res.body._id, id);
             done();
@@ -180,7 +175,7 @@ suite('Functional Tests', function () {
           .put('/api/issues/apitest')
           .send(update)
           .end(function (req, res) {
-            assert.equal(res.status, 400);
+            assert.equal(res.status, 200);
             assert.equal(res.body.error, 'missing _id');
             done();
           });
@@ -201,11 +196,6 @@ suite('Functional Tests', function () {
             done();
           });
       });
-      // Update an issue with an invalid _id: PUT request to /api/issues/{project}
-      //   {
-      //     "error": "could not update",
-      //     "_id": "5fb90854487c295755641111"
-      // } expected with status 200
       test('Update an issue with an invalid _id', function (done) {
         const update = {
           _id: ObjectId('5fb90854487c295755641111'),
@@ -256,8 +246,9 @@ suite('Functional Tests', function () {
           .delete('/api/issues/apitest')
           .send({ _id: id2 })
           .end(function (req, res) {
-            assert.equal(res.status, 400);
-            assert.equal(res.body.error, 'invalid _id');
+            assert.equal(res.status, 200);
+            assert.equal(res.body.error, 'could not delete');
+            assert.equal(res.body._id, id2);
             done();
           });
       });
@@ -266,7 +257,7 @@ suite('Functional Tests', function () {
           .request(server)
           .delete('/api/issues/apitest')
           .end(function (req, res) {
-            assert.equal(res.status, 400);
+            assert.equal(res.status, 200);
             assert.equal(res.body.error, 'missing _id');
             done();
           });
